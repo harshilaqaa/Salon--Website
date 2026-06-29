@@ -16,31 +16,37 @@ export function Hero({ onReserveClick }: HeroProps) {
   const metaRef = useRef<HTMLDivElement>(null)
   const ctaRef = useRef<HTMLDivElement>(null)
 
+  // Mouse follower coordinates
   const mouseX = useMotionValue(-200)
   const mouseY = useMotionValue(-200)
-  const springX = useSpring(mouseX, { stiffness: 120, damping: 20 })
-  const springY = useSpring(mouseY, { stiffness: 120, damping: 20 })
+  
+  // High-performance spring settings (faster response, less layout calculation)
+  const springX = useSpring(mouseX, { stiffness: 150, damping: 25, mass: 0.5 })
+  const springY = useSpring(mouseY, { stiffness: 150, damping: 25, mass: 0.5 })
   const followerScale = useMotionValue(1)
-  const followerScaleSpring = useSpring(followerScale, { stiffness: 200, damping: 25 })
-  const dotSpringX = useSpring(mouseX, { stiffness: 60, damping: 15 })
-  const dotSpringY = useSpring(mouseY, { stiffness: 60, damping: 15 })
+  const followerScaleSpring = useSpring(followerScale, { stiffness: 300, damping: 30 })
 
   useEffect(() => {
     const handleMouse = (e: MouseEvent) => {
-      mouseX.set(e.clientX)
-      mouseY.set(e.clientY)
+      // Use requestAnimationFrame to let the browser throttle mouse events smoothly
+      window.requestAnimationFrame(() => {
+        mouseX.set(e.clientX)
+        mouseY.set(e.clientY)
+      })
     }
-    window.addEventListener("mousemove", handleMouse)
+    window.addEventListener("mousemove", handleMouse, { passive: true })
     return () => window.removeEventListener("mousemove", handleMouse)
   }, [mouseX, mouseY])
 
-  const expandFollower = () => followerScale.set(2.8)
+  const expandFollower = () => followerScale.set(2.2)
   const shrinkFollower = () => followerScale.set(1)
 
   useEffect(() => {
     const ctx = gsap.context(() => {
+      // Background parallax - forced to 3D hardware acceleration
       gsap.to(bgRef.current, {
-        yPercent: 20,
+        yPercent: 15,
+        force3D: true,
         ease: "none",
         scrollTrigger: {
           trigger: heroRef.current,
@@ -50,42 +56,39 @@ export function Hero({ onReserveClick }: HeroProps) {
         },
       })
 
-      const tl = gsap.timeline({ delay: 0.5 })
+      const tl = gsap.timeline({ delay: 0.3 })
       const headline = heroRef.current?.querySelector(".hero-headline")
       const words2 = heroRef.current?.querySelector(".hero-word-2")
 
       if (headline) {
-        tl.fromTo(headline, { y: 80, opacity: 0 }, { y: 0, opacity: 1, duration: 1.1, ease: "power4.out" })
+        tl.fromTo(headline, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: "power3.out", force3D: true })
       }
       if (words2) {
-        tl.fromTo(words2, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, "-=0.6")
+        tl.fromTo(words2, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power2.out", force3D: true }, "-=0.5")
       }
       if (sublineRef.current) {
-        tl.fromTo(sublineRef.current, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: "power3.out" }, "-=0.4")
+        tl.fromTo(sublineRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power2.out", force3D: true }, "-=0.4")
       }
       if (metaRef.current) {
-        tl.fromTo(metaRef.current, { y: 25, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power2.out" }, "-=0.4")
+        tl.fromTo(metaRef.current, { y: 15, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power2.out", force3D: true }, "-=0.4")
       }
       if (ctaRef.current) {
-        tl.fromTo(ctaRef.current, { y: 25, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power2.out" }, "-=0.3")
+        tl.fromTo(ctaRef.current, { y: 15, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power2.out", force3D: true }, "-=0.3")
       }
-
-      gsap.fromTo(bgRef.current, { scale: 1 }, { scale: 1.08, duration: 18, ease: "sine.inOut", yoyo: true, repeat: -1 })
     }, heroRef)
 
     return () => ctx.revert()
   }, [])
 
   return (
-    <section ref={heroRef} id="experience" className="relative w-full h-screen overflow-hidden flex items-center justify-center" style={{ perspective: "1200px" }}>
-      <div ref={bgRef} className="absolute inset-0 w-full h-full transform-gpu will-change-transform" style={{ transformOrigin: "center center" }}>
-        <img src="/salon-hero-bg.webp" alt="" className="w-full h-full object-cover transform-gpu" style={{ transform: "scale(1.15)" }} draggable={false} />
+    <section ref={heroRef} id="experience" className="relative w-full h-screen overflow-hidden flex items-center justify-center transform-gpu">
+      <div ref={bgRef} className="absolute inset-0 w-full h-full transform-gpu will-change-transform">
+        <img src="/salon-hero-bg.webp" alt="" className="w-full h-full object-cover transform-gpu" style={{ transform: "scale(1.1)" }} draggable={false} />
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
-        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.65) 100%)" }} />
       </div>
 
       <div className="relative z-10 text-center px-6 max-w-6xl mx-auto w-full transform-gpu">
-        <motion.div initial={{ opacity: 0, letterSpacing: "0.1em" }} animate={{ opacity: 1, letterSpacing: "0.5em" }} transition={{ duration: 1.5, delay: 0.2, ease: [0.16, 1, 0.3, 1] }} className="text-[0.6rem] md:text-xs text-primary tracking-[0.5em] uppercase mb-6 md:mb-8">
+        <motion.div initial={{ opacity: 0, letterSpacing: "0.1em" }} animate={{ opacity: 1, letterSpacing: "0.5em" }} transition={{ duration: 1.2, delay: 0.1 }} className="text-[0.6rem] md:text-xs text-primary tracking-[0.5em] uppercase mb-6 md:mb-8">
           Est. 2010 &nbsp;·&nbsp; Haryana
         </motion.div>
 
@@ -98,7 +101,7 @@ export function Hero({ onReserveClick }: HeroProps) {
           </span>
         </div>
 
-        <div ref={sublineRef} className="opacity-0 mb-8 md:mb-12">
+        <div ref={sublineRef} className="opacity-0 mb-8 md:mb-12 transform-gpu">
           <p className="font-serif italic text-[clamp(1rem,3vw,1.75rem)] text-stone-400/80 tracking-widest font-light">The Art of Hair Couture</p>
           <div className="mt-4 flex items-center justify-center gap-4">
             <div className="h-px w-16 bg-primary/30" />
@@ -107,7 +110,7 @@ export function Hero({ onReserveClick }: HeroProps) {
           </div>
         </div>
 
-        <div ref={metaRef} className="opacity-0 flex items-center justify-center gap-8 mb-10 md:mb-14">
+        <div ref={metaRef} className="opacity-0 flex items-center justify-center gap-8 mb-10 md:mb-14 transform-gpu">
           {[
             { value: "15+", label: "Years of Excellence" },
             { value: "6", label: "Houses" },
@@ -120,10 +123,9 @@ export function Hero({ onReserveClick }: HeroProps) {
           ))}
         </div>
 
-        <div ref={ctaRef} className="opacity-0 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div ref={ctaRef} className="opacity-0 flex flex-col sm:flex-row items-center justify-center gap-4 transform-gpu">
           <motion.button onClick={onReserveClick} onMouseEnter={expandFollower} onMouseLeave={shrinkFollower} className="group px-10 py-4 bg-primary text-primary-foreground text-xs tracking-[0.3em] uppercase font-medium hover:bg-primary/90 transition-all duration-400 relative overflow-hidden" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
             <span className="relative z-10">Reserve Your Experience</span>
-            <motion.div className="absolute inset-0 bg-white/10" initial={{ x: "-100%" }} whileHover={{ x: "100%" }} transition={{ duration: 0.5, ease: "easeInOut" }} />
           </motion.button>
           <motion.button onClick={() => document.querySelector("#services")?.scrollIntoView({ behavior: "smooth" })} onMouseEnter={expandFollower} onMouseLeave={shrinkFollower} className="px-10 py-4 border border-white/20 text-foreground/70 text-xs tracking-[0.3em] uppercase font-light hover:border-primary/50 hover:text-foreground transition-all duration-400" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
             Discover the Menu
@@ -131,13 +133,19 @@ export function Hero({ onReserveClick }: HeroProps) {
         </div>
       </div>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.5, duration: 1 }} className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-        <span className="text-[0.55rem] tracking-[0.4em] uppercase text-stone-500/50">Scroll</span>
-        <motion.div className="w-px h-10 bg-gradient-to-b from-primary/50 to-transparent" animate={{ scaleY: [0, 1, 0], transformOrigin: "top" }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }} />
-      </motion.div>
-
-      <motion.div className="fixed top-0 left-0 pointer-events-none z-[9999] rounded-full border border-primary/70 mix-blend-difference hidden md:block" style={{ x: springX, y: springY, translateX: "-50%", translateY: "-50%", scale: followerScaleSpring, width: 20, height: 20 }} />
-      <motion.div className="fixed top-0 left-0 pointer-events-none z-[9998] rounded-full bg-primary/20 hidden md:block" style={{ x: dotSpringX, y: dotSpringY, translateX: "-50%", translateY: "-50%", width: 6, height: 6 }} />
+      {/* High-Performance Custom Cursor (No blend-modes, utilizes GPU layers) */}
+      <motion.div 
+        className="fixed top-0 left-0 pointer-events-none z-[9999] rounded-full bg-primary/10 border border-primary/40 hidden md:block will-change-transform transform-gpu" 
+        style={{ 
+          x: springX, 
+          y: springY, 
+          translateX: "-50%", 
+          translateY: "-50%", 
+          scale: followerScaleSpring, 
+          width: 32, 
+          height: 32 
+        }} 
+      />
     </section>
   )
 }
