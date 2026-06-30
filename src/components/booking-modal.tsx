@@ -16,6 +16,15 @@ interface ClientInfo {
 }
 
 /* ── Data ───────────────────────────────── */
+const HOUSE_PHONES: Record<string, string> = {
+  "House I": "919582806555",
+  "House II": "919910995230",
+  "House III": "919355000102",
+  "House IV": "919718959090",
+  "House V": "919355000101",
+  "House VI": "919996630605",
+}
+
 const BOOKABLE_SERVICES: BookingService[] = [
   { name: "Signature Editorial Cut & Style", duration: 75 },
   { name: "Master Class Cut", duration: 90 },
@@ -101,6 +110,7 @@ interface BookingModalProps {
 
 export function BookingModal({ open, onClose, preSelectedService }: BookingModalProps) {
   const [step, setStep] = useState(1)
+  const [selectedHouse, setSelectedHouse] = useState<string>("House I")
   const [selectedServices, setSelectedServices] = useState<Set<string>>(
     preSelectedService ? new Set([preSelectedService]) : new Set()
   )
@@ -130,9 +140,9 @@ export function BookingModal({ open, onClose, preSelectedService }: BookingModal
 
   const handleClose = () => {
     onClose()
-    // reset after animation completes
     setTimeout(() => {
       setStep(1)
+      setSelectedHouse("House I")
       setSelectedServices(preSelectedService ? new Set([preSelectedService]) : new Set())
       setSelectedDay(null)
       setSelectedTime(null)
@@ -162,6 +172,30 @@ export function BookingModal({ open, onClose, preSelectedService }: BookingModal
 
   const goNext = () => { setDir(1); setStep((s) => s + 1) }
   const goPrev = () => { setDir(-1); setStep((s) => s - 1) }
+
+  // High-Performance WhatsApp Dispatcher Interception
+  const triggerWhatsAppRedirect = () => {
+    const targetPhone = HOUSE_PHONES[selectedHouse] || HOUSE_PHONES["House I"]
+    
+    const textMessage = 
+      `✨ *NEW APPOINTMENT RESERVATION* ✨\n\n` +
+      `🆔 *Booking Ref:* ${bookingId}\n` +
+      `📍 *Salon Branch:* ${selectedHouse}\n\n` +
+      `👤 *Client Information:*\n` +
+      `• Name: ${clientInfo.name}\n` +
+      `• Mobile: ${clientInfo.phone}\n` +
+      `• Email: ${clientInfo.email}\n\n` +
+      `✂️ *Selected Treatments:*\n` +
+      `${Array.from(selectedServices).map(s => `  - ${s}`).join("\n")}\n\n` +
+      `📅 *Schedule details:*\n` +
+      `• Date: ${MONTH_NAMES[calMonth]} ${selectedDay}, ${calYear}\n` +
+      `• Time: ${selectedTime}\n\n` +
+      `📝 *Special Requests:* ${clientInfo.preferences || "None Specified"}`
+
+    const whatsappUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(textMessage)}`
+    window.open(whatsappUrl, "_blank")
+    goNext()
+  }
 
   return (
     <AnimatePresence>
@@ -408,6 +442,25 @@ export function BookingModal({ open, onClose, preSelectedService }: BookingModal
                     </p>
 
                     <div className="flex flex-col gap-8">
+                      {/* Premium Branch Dropdown Selector */}
+                      <div>
+                        <label className="text-[0.6rem] tracking-[0.3em] uppercase text-muted-foreground block mb-1">
+                          Select Salon Branch *
+                        </label>
+                        <select
+                          value={selectedHouse}
+                          onChange={(e) => setSelectedHouse(e.target.value)}
+                          className="luxury-input bg-transparent text-foreground cursor-pointer outline-none w-full py-2 border-b border-border text-sm"
+                          style={{ borderRadius: 0 }}
+                        >
+                          {Object.keys(HOUSE_PHONES).map((houseName) => (
+                            <option key={houseName} value={houseName} className="bg-card text-foreground text-sm py-2">
+                              {houseName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
                       <div>
                         <label className="text-[0.6rem] tracking-[0.3em] uppercase text-muted-foreground block mb-1">
                           Full Name *
@@ -476,6 +529,8 @@ export function BookingModal({ open, onClose, preSelectedService }: BookingModal
                           </span>
                           <span className="text-border">·</span>
                           <span>{selectedTime}</span>
+                          <span className="text-border">·</span>
+                          <span className="text-primary font-medium">{selectedHouse}</span>
                         </div>
                       </div>
                     </div>
@@ -532,8 +587,8 @@ export function BookingModal({ open, onClose, preSelectedService }: BookingModal
                         Welcome, {clientInfo.name.split(" ")[0]}.
                       </h3>
                       <p className="text-sm text-muted-foreground font-light leading-relaxed max-w-sm mb-8">
-                        Your experience has been reserved. A confirmation will be sent to{" "}
-                        <span className="text-foreground">{clientInfo.email}</span>.
+                        Your experience has been reserved. Details have been forwarded to{" "}
+                        <span className="text-foreground">{selectedHouse}</span>.
                       </p>
 
                       <div className="inline-block border border-primary/30 px-8 py-5 mb-6">
@@ -546,7 +601,7 @@ export function BookingModal({ open, onClose, preSelectedService }: BookingModal
                       </div>
 
                       <div className="text-xs text-muted-foreground space-y-1">
-                        <p>{MONTH_NAMES[calMonth]} {selectedDay}, {calYear} · {selectedTime}</p>
+                        <p>{MONTH_NAMES[calMonth]} {selectedDay}, {calYear} · {selectedTime} · <span className="text-foreground font-medium">{selectedHouse}</span></p>
                         <p>{selectedServices.size} treatment{selectedServices.size > 1 ? "s" : ""} · {totalDuration} mins</p>
                       </div>
 
@@ -589,7 +644,7 @@ export function BookingModal({ open, onClose, preSelectedService }: BookingModal
 
                 <motion.button
                   onClick={() => {
-                    if (step === 3 && step3Valid) goNext()
+                    if (step === 3 && step3Valid) triggerWhatsAppRedirect()
                     else if (step === 2 && step2Valid) goNext()
                     else if (step === 1 && step1Valid) goNext()
                   }}
